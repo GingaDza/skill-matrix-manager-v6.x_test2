@@ -1,185 +1,173 @@
-from PyQt5.QtWidgets import (QGroupBox, QVBoxLayout, QHBoxLayout,
-                           QLabel, QComboBox, QPushButton, QSpinBox,
-                           QTabWidget, QMessageBox, QWidget)
-from PyQt5.QtCore import Qt
-from typing import Dict, List, Callable
-from skill_matrix_manager.utils.debug_logger import DebugLogger
+from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QPushButton,
+                           QLabel, QComboBox, QSpacerItem, QSizePolicy)
+from PyQt5.QtCore import pyqtSignal
+from typing import Dict, List, Optional, Callable
 from .skill_input_dialog import SkillInputDialog
+from .stage_display_widget import StageDisplayWidget
+from skill_matrix_manager.utils.debug_logger import DebugLogger
 
 logger = DebugLogger.get_logger()
 
-class ProgressiveTargetWidget(QGroupBox):
+class ProgressiveTargetWidget(QWidget):
+    # シグナルの定義
+    on_stage_changed: Callable[[List[Dict]], None]
+
     def __init__(self, parent=None):
-        super().__init__("段階的目標値設定", parent)
-        self.on_stage_changed = None
-        self.on_stage_removed = None
-        self._stages = {}  # 期間ごとのスキルレベルを保持
-        self._skills = {}  # スキル一覧
+        super().__init__(parent)
+        self._stages: List[Dict[str, Dict[str, Dict[str, int]]]] = []  # [時期: {グループ: {カテゴリ: {スキル: レベル}}}]
+        self._time_values = [1, 3, 6, 12]  # デフォルトの時間値
+        self._time_unit = "月"  # デフォルトの時間単位
+        self._skill_hierarchy: Dict[str, Dict[str, Dict[str, str]]] = {}  # {グループ: {カテゴリ: {スキル: 現在レベル}}}
         self._setup_ui()
         logger.debug("ProgressiveTargetWidget initialized")
 
-    def _setup_ui(self) -> None:
-        main_layout = QVBoxLayout()
-        main_layout.setSpacing(20)
+    def _setup_ui(self):
+        """UIのセットアップ"""
+        layout = QVBoxLayout()
         
-        # 目標時間設定グループ
-        time_group = QGroupBox("目標時間設定")
-        time_layout = QHBoxLayout()
+        # 上部コントロールエリア
+        control_layout = QHBoxLayout()
         
         # 時間単位選択
-        time_layout.addWidget(QLabel("時間単位:"))
+        time_unit_layout = QHBoxLayout()
+        time_unit_label = QLabel("時間単位:")
         self.time_unit_combo = QComboBox()
         self.time_unit_combo.addItems(["時間", "日", "月", "年"])
-        self.time_unit_combo.setCurrentText("月")  # デフォルトを月に設定
-        time_layout.addWidget(self.time_unit_combo)
+        self.time_unit_combo.setCurrentText(self._time_unit)
+        self.time_unit_combo.currentTextChanged.connect(self._on_time_unit_changed)
+        time_unit_layout.addWidget(time_unit_label)
+        time_unit_layout.addWidget(self.time_unit_combo)
+        control_layout.addLayout(time_unit_layout)
         
-        # 目標時間
-        time_layout.addWidget(QLabel("目標時間:"))
-        self.time_value = QSpinBox()
-        self.time_value.setRange(1, 9999)
-        self.time_value.setValue(3)  # デフォルトを3に設定
-        time_layout.addWidget(self.time_value)
+        # スペーサー
+        control_layout.addSpacerItem(QSpacerItem(40, 20, QSizePolicy.Expanding, QSizePolicy.Minimum))
         
-        # 追加ボタン
-        add_button = QPushButton("目標期間を追加")
-        add_button.clicked.connect(self._add_time_period)
-        time_layout.addWidget(add_button)
+        # ステージ追加ボタン
+        self.add_stage_button = QPushButton("ステージを追加")
+        self.add_stage_button.clicked.connect(self._add_stage)
+        control_layout.addWidget(self.add_stage_button)
         
-        time_layout.addStretch()
-        time_group.setLayout(time_layout)
-        main_layout.addWidget(time_group)
+        layout.addLayout(control_layout)
         
-        # タブウィジェット
-        self.tab_widget = QTabWidget()
-        self.tab_widget.setTabPosition(QTabWidget.North)
-        main_layout.addWidget(self.tab_widget)
+        # ステージ表示エリア
+        self.stages_layout = QVBoxLayout()
+        layout.addLayout(self.stages_layout)
         
-        self.setLayout(main_layout)
-        logger.debug("UI setup completed")
+        # 余白を追加
+        layout.addStretch()
+        
+        self.setLayout(layout)
+        logger.debug("ProgressiveTargetWidget UI setup completed")
 
-    def set_skills(self, skills: Dict[str, str]) -> None:
-        """スキル一覧を設定"""
-        logger.debug(f"Setting skills in ProgressiveTargetWidget: {skills}")
-        self._skills = skills
-        if self.on_stage_changed:
-            self.on_stage_changed(self.get_current_stage())
+    def set_skill_hierarchy(self, hierarchy: Dict[str, Dict[str, Dict[str, str]]]) -> None:
+        """スキル階層構造の設定"""
+        logger.debug(f"Setting skill hierarchy: {hierarchy}")
+        self._skill_hierarchy = hierarchy
+        self._clear_stages()
 
-    def _add_time_period(self) -> None:
-        """新しい目標期間を追加"""
-        time_value = self.time_value.value()
-        time_unit = self.time_unit_combo.currentText()
-        
-        # 重複チェック
-        period_key = f"{time_value}{time_unit}"
-        if period_key in self._stages:
-            QMessageBox.warning(
-                self,
-                "警告",
-                f"同じ期間（{period_key}）の目標が既に存在します。"
-            )
+    def _clear_stages(self) -> None:
+        """全ステージの削除"""
+        logger.debug("Clearing all stages")
+        self._stages.clear()
+        # UIからステージウィジェットを削除
+        while self.stages_layout.count():
+            item = self.stages_layout.takeAt(0)
+            if item.widget():
+                item.widget().deleteLater()
+        self._notify_stage_changed()
+
+    def _add_stage(self) -> None:
+        """新しいステージの追加"""
+        if not self._skill_hierarchy:
+            logger.warning("Cannot add stage: No skill hierarchy defined")
             return
-        
-        logger.debug(f"Adding new time period with skills: {self._skills}")
-        
+
+        time_value = self._get_next_time_value()
+        if time_value is None:
+            logger.warning("Cannot add stage: No more time values available")
+            return
+
         # スキル入力ダイアログを表示
-        dialog = SkillInputDialog(time_value, time_unit, self._skills, self)
+        dialog = SkillInputDialog(time_value, self._time_unit, self._skill_hierarchy, self)
         if dialog.exec_():
-            skill_levels = dialog.get_skill_levels()
-            self._stages[period_key] = {
-                'time': time_value,
-                'unit': time_unit,
-                'targets': skill_levels
-            }
-            
-            logger.debug(f"Added new stage: {self._stages[period_key]}")
-            
-            # タブの更新
-            self._update_tabs()
-            
-            # 値の変更を通知
-            if self.on_stage_changed:
-                self.on_stage_changed(self.get_current_stage())
+            stage_data = dialog.get_skill_levels()
+            self._add_stage_widget(time_value, stage_data)
+            logger.debug(f"Added new stage with time value {time_value}")
+            self._notify_stage_changed()
 
-    def _update_tabs(self) -> None:
-        """タブの更新"""
-        # 既存のタブをクリア
-        self.tab_widget.clear()
+    def _get_next_time_value(self) -> Optional[int]:
+        """次の時間値を取得"""
+        used_values = [stage["time_value"] for stage in self._stages]
+        available_values = [v for v in self._time_values if v not in used_values]
+        return min(available_values) if available_values else None
+
+    def _add_stage_widget(self, time_value: int, stage_data: Dict[str, Dict[str, Dict[str, int]]]) -> None:
+        """ステージウィジェットの追加"""
+        stage = {
+            "time_value": time_value,
+            "time_unit": self._time_unit,
+            "data": stage_data
+        }
+        self._stages.append(stage)
+        self._stages.sort(key=lambda x: x["time_value"])
         
-        # ステージをソート
-        sorted_stages = sorted(
-            self._stages.items(),
-            key=lambda x: self._convert_to_hours(x[1]['time'], x[1]['unit'])
-        )
-        
-        # タブを追加
-        for period_key, stage in sorted_stages:
-            # タブの内容を作成
-            tab_content = QWidget()
-            tab_layout = QVBoxLayout(tab_content)
-            
-            # スキルレベル一覧を表示
-            for skill_name in self._skills.keys():
-                level = stage['targets'].get(skill_name, 1)
-                skill_label = QLabel(f"{skill_name}: レベル{level}")
-                tab_layout.addWidget(skill_label)
-            
-            # 編集・削除ボタン
-            button_layout = QHBoxLayout()
-            
-            edit_button = QPushButton("編集")
-            edit_button.clicked.connect(
-                lambda checked, p=period_key: self._edit_time_period(p)
+        # UIを更新
+        self._update_stages_ui()
+        logger.debug(f"Added stage widget for time value {time_value}")
+
+    def _update_stages_ui(self) -> None:
+        """ステージUIの更新"""
+        # 既存のウィジェットをクリア
+        while self.stages_layout.count():
+            item = self.stages_layout.takeAt(0)
+            if item.widget():
+                item.widget().deleteLater()
+
+        # ステージウィジェットを再作成
+        for stage in self._stages:
+            widget = StageDisplayWidget(
+                time_value=stage["time_value"],
+                time_unit=stage["time_unit"],
+                stage_data=stage["data"],
+                parent=self
             )
-            button_layout.addWidget(edit_button)
-            
-            delete_button = QPushButton("削除")
-            delete_button.clicked.connect(
-                lambda checked, p=period_key: self._delete_time_period(p)
+            widget.delete_requested.connect(
+                lambda time_val=stage["time_value"]: self._delete_stage(time_val)
             )
-            button_layout.addWidget(delete_button)
-            
-            tab_layout.addLayout(button_layout)
-            tab_layout.addStretch()
-            
-            # タブを追加
-            self.tab_widget.addTab(tab_content, period_key)
+            self.stages_layout.addWidget(widget)
+        logger.debug("Updated stages UI")
 
-    def _edit_time_period(self, period_key: str) -> None:
-        """期間の編集"""
-        stage = self._stages[period_key]
-        dialog = SkillInputDialog(stage['time'], stage['unit'], self._skills, self)
-        if dialog.exec_():
-            skill_levels = dialog.get_skill_levels()
-            stage['targets'] = skill_levels
-            self._update_tabs()
-            if self.on_stage_changed:
-                self.on_stage_changed(self.get_current_stage())
+    def _delete_stage(self, time_value: int) -> None:
+        """ステージの削除"""
+        self._stages = [s for s in self._stages if s["time_value"] != time_value]
+        self._update_stages_ui()
+        self._notify_stage_changed()
+        logger.debug(f"Deleted stage with time value {time_value}")
 
-    def _delete_time_period(self, period_key: str) -> None:
-        """期間の削除"""
-        msg = QMessageBox()
-        msg.setIcon(QMessageBox.Question)
-        msg.setText(f"期間「{period_key}」の目標を削除しますか？")
-        msg.setWindowTitle("目標期間の削除")
-        msg.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
-        
-        if msg.exec_() == QMessageBox.Yes:
-            self._stages.pop(period_key, None)
-            self._update_tabs()
-            if self.on_stage_changed:
-                self.on_stage_changed(self.get_current_stage())
+    def _on_time_unit_changed(self, new_unit: str) -> None:
+        """時間単位変更時の処理"""
+        logger.debug(f"Time unit changed to {new_unit}")
+        self._time_unit = new_unit
+        # 既存のステージの時間単位を更新
+        for stage in self._stages:
+            stage["time_unit"] = new_unit
+        self._update_stages_ui()
+        self._notify_stage_changed()
 
     def get_current_stage(self) -> List[Dict]:
         """現在のステージデータを取得"""
-        return list(self._stages.values())
+        return [
+            {
+                "time_value": stage["time_value"],
+                "time_unit": stage["time_unit"],
+                "data": stage["data"]
+            }
+            for stage in self._stages
+        ]
 
-    def _convert_to_hours(self, time: int, unit: str) -> int:
-        """時間単位を時間に変換"""
-        multipliers = {
-            "時間": 1,
-            "日": 24,
-            "月": 24 * 30,
-            "年": 24 * 365
-        }
-        return time * multipliers.get(unit, 1)
+    def _notify_stage_changed(self) -> None:
+        """ステージ変更通知"""
+        if hasattr(self, 'on_stage_changed'):
+            self.on_stage_changed(self.get_current_stage())
+        logger.debug("Stage change notification sent")
 
