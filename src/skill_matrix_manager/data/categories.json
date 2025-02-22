@@ -1,0 +1,38 @@
+{
+  "categories": [
+    {
+      "name": "プログラミング",
+      "skills": [
+        {
+          "name": "プログラミング基礎",
+          "skills": [
+            {"name": "Python", "level": "1"},
+            {"name": "JavaScript", "level": "1"},
+            {"name": "Java", "level": "1"}
+          ]
+        },
+        {
+          "name": "フレームワーク",
+          "skills": [
+            {"name": "Django", "level": "1"},
+            {"name": "React", "level": "1"},
+            {"name": "Spring", "level": "1"}
+          ]
+        }
+      ]
+    },
+    {
+      "name": "デザイン",
+      "skills": [
+        {
+          "name": "UI/UXデザイン",
+          "skills": [
+            {"name": "Figma", "level": "1"},
+            {"name": "Adobe XD", "level": "1"},
+            {"name": "Sketch", "level": "1"}
+          ]
+        }
+      ]
+    }
+  ]
+}

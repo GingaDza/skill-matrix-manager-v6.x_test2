@@ -1,0 +1,22 @@
+exceptiongroup==1.2.2
+iniconfig==2.0.0
+narwhals==1.27.1
+numpy==1.26.4
+packaging==24.2
+plotly==5.18.0
+pluggy==1.5.0
+PyQt5==5.15.11
+PyQt5-Qt5==5.15.16
+PyQt5_sip==12.17.0
+PyQtChart==5.15.7
+PyQtChart-Qt5==5.15.16
+PyQtWebEngine==5.15.6
+PyQtWebEngine-Qt5==5.15.16
+pytest==8.3.4
+pytest-qt==4.4.0
+# Editable install with no version control (skill-matrix==0.1.0)
+-e /Users/sanadatakeshi/Desktop/my_app/skill-matrix-clean-v1
+skill-matrix-manager==0.1
+skill-matrix-manager-v6==0.1.0
+tenacity==9.0.0
+tomli==2.2.1
