@@ -9,20 +9,47 @@ logger = DebugLogger.get_logger()
 class SkillGapTab(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
-        # 初期スキルデータ
-        self._skills = {
-            'Python': 'プログラミング言語',
-            'SQL': 'データベース',
-            'Git': 'バージョン管理',
-            'Docker': 'コンテナ化',
-            'AWS': 'クラウドプラットフォーム'
-        }  
-        self._current_skills = {name: 1 for name in self._skills.keys()}  # 現在のスキルレベル（すべて1）
+        # 初期スキルデータ（階層構造）
+        self._skill_hierarchy = {
+            'プログラミング': {
+                'バックエンド': {
+                    'Python': '1',
+                    'SQL': '1',
+                    'Java': '1'
+                },
+                'フロントエンド': {
+                    'JavaScript': '1',
+                    'HTML/CSS': '1',
+                    'React': '1'
+                }
+            },
+            'インフラ': {
+                'クラウド': {
+                    'AWS': '1',
+                    'Docker': '1',
+                    'Kubernetes': '1'
+                },
+                'ネットワーク': {
+                    'TCP/IP': '1',
+                    'セキュリティ': '1'
+                }
+            },
+            'プロジェクト管理': {
+                '開発プロセス': {
+                    'Agile': '1',
+                    'Scrum': '1'
+                },
+                'バージョン管理': {
+                    'Git': '1',
+                    'GitHub': '1'
+                }
+            }
+        }
         logger.debug("Initializing SkillGapTab")
         self._setup_ui()
         
         # 初期値を設定
-        self.set_skills(self._skills)
+        self.set_skills(self._skill_hierarchy)
 
     def _setup_ui(self):
         """UIのセットアップ"""
@@ -41,7 +68,7 @@ class SkillGapTab(QWidget):
         scroll_layout = QVBoxLayout(scroll_content)
 
         # 段階的目標設定ウィジェット
-        self.progressive_widget = ProgressiveTargetWidget(self)  # selfを渡してparentを設定
+        self.progressive_widget = ProgressiveTargetWidget(self)
         self.progressive_widget.on_stage_changed = self._on_stage_changed
         scroll_layout.addWidget(self.progressive_widget)
         
@@ -57,12 +84,11 @@ class SkillGapTab(QWidget):
 
         self.setLayout(main_layout)
 
-    def set_skills(self, skills: Dict[str, str]) -> None:
-        """スキル一覧の更新"""
-        logger.debug(f"Skills changed: {skills}")
-        self._skills = skills
-        self._current_skills = {name: 1 for name in skills.keys()}  # 現在のスキルレベルをリセット
-        self.progressive_widget.set_skills(skills)
+    def set_skills(self, skill_hierarchy: Dict[str, Dict[str, Dict[str, str]]]) -> None:
+        """スキル階層構造の更新"""
+        logger.debug(f"Setting skill hierarchy: {skill_hierarchy}")
+        self._skill_hierarchy = skill_hierarchy
+        self.progressive_widget.set_skill_hierarchy(skill_hierarchy)
         self._update_chart()
 
     def _on_stage_changed(self, stages: List[Dict]) -> None:
@@ -70,26 +96,63 @@ class SkillGapTab(QWidget):
         logger.debug(f"Stage changed: {stages}")
         self._update_chart()
 
+    def _get_current_levels(self) -> Dict[str, Dict[str, Dict[str, int]]]:
+        """現在のスキルレベルを取得"""
+        current_levels = {}
+        for group, categories in self._skill_hierarchy.items():
+            current_levels[group] = {}
+            for category, skills in categories.items():
+                current_levels[group][category] = {
+                    skill: 1 for skill in skills.keys()
+                }
+        return current_levels
+
+    def _flatten_skill_data(self, data: Dict[str, Dict[str, Dict[str, int]]]) -> Dict[str, int]:
+        """階層構造のスキルデータをフラット化"""
+        flattened = {}
+        for group in data:
+            for category in data[group]:
+                for skill, level in data[group][category].items():
+                    flattened[f"{group}-{category}-{skill}"] = level
+        return flattened
+
     def _update_chart(self) -> None:
         """チャートの更新"""
-        # スキル名のリストを作成（順序を保持）
-        skill_names = list(self._skills.keys())
-        logger.debug(f"Skill names for chart: {skill_names}")
-        
-        # 現在値を設定（すべて1）
-        current_values = [self._current_skills[name] for name in skill_names]
-        logger.debug(f"Current values for chart: {current_values}")
+        # 現在値を取得（すべて1で初期化）
+        current_values = self._get_current_levels()
         
         # ステージのスキル値を取得
         stages = self.progressive_widget.get_current_stage()
-        logger.debug(f"Stages for chart: {stages}")
+        logger.debug(f"Updating chart with {len(stages)} stages")
+
+        # チャートカテゴリの準備（全スキルのフルパス）
+        all_skills = []
+        for group in self._skill_hierarchy:
+            for category in self._skill_hierarchy[group]:
+                for skill in self._skill_hierarchy[group][category]:
+                    all_skills.append(f"{group}-{category}-{skill}")
+
+        # 現在値をフラット化
+        current_flat = self._flatten_skill_data(current_values)
         
+        # ステージデータの準備
+        stage_data = []
+        for stage in stages:
+            flattened = self._flatten_skill_data(stage["data"])
+            stage_data.append({
+                "time": f"{stage['time_value']}{stage['time_unit']}",
+                "values": [flattened.get(skill, 1) for skill in all_skills]
+            })
+
         # チャートの更新
         self.chart_widget.update_progressive_chart(
-            categories=skill_names,
-            current_values=current_values,
-            stages=stages
+            categories=all_skills,
+            current_values=[current_flat.get(skill, 1) for skill in all_skills],
+            stages=stage_data
         )
         
-        logger.debug(f"Chart updated with {len(stages)} stages")
+        logger.debug("Chart updated")
 
+    def get_current_skill_hierarchy(self) -> Dict[str, Dict[str, Dict[str, str]]]:
+        """現在のスキル階層構造を取得"""
+        return self._skill_hierarchy.copy()
