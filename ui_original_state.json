@@ -1,0 +1,59 @@
+{
+  "main_layout": {
+    "split_ratio": [
+      3,
+      7
+    ],
+    "left_panel": {
+      "widgets": [
+        {
+          "type": "QLabel",
+          "text": "グループ選択:"
+        },
+        {
+          "type": "QComboBox",
+          "name": "group_combo"
+        },
+        {
+          "type": "QLabel",
+          "text": "ユーザーリスト:"
+        },
+        {
+          "type": "QListWidget",
+          "name": "user_list"
+        },
+        {
+          "type": "QPushButton",
+          "text": "追加"
+        },
+        {
+          "type": "QPushButton",
+          "text": "編集"
+        },
+        {
+          "type": "QPushButton",
+          "text": "削除"
+        }
+      ]
+    },
+    "right_panel": {
+      "tabs": [
+        {
+          "name": "スキル分析",
+          "subtabs": [
+            "総合評価",
+            "スキルギャップ"
+          ]
+        },
+        {
+          "name": "システム管理",
+          "subtabs": [
+            "初期設定",
+            "データ入出力",
+            "システム情報"
+          ]
+        }
+      ]
+    }
+  }
+}

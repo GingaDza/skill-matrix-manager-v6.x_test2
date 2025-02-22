@@ -1,0 +1,109 @@
+Application started at: 2025-02-20 09:46:13
+User: GingaDza
+--------------------------------------------------
+Application started at: 2025-02-20 09:46:13
+User: GingaDza
+--------------------------------------------------
+Application started at: 2025-02-20 09:46:13
+User: GingaDza
+--------------------------------------------------
+Application started at: 2025-02-20 09:46:13
+User: GingaDza
+--------------------------------------------------
+Application started at: 2025-02-20 09:46:13
+User: GingaDza
+--------------------------------------------------
+Application started at: 2025-02-20 09:46:13
+User: GingaDza
+--------------------------------------------------
+Application started at: 2025-02-20 09:46:13
+User: GingaDza
+--------------------------------------------------
+Application started at: 2025-02-21 14:13:13
+User: GingaDza
+--------------------------------------------------
+Application started at: 2025-02-21 14:13:13
+User: GingaDza
+--------------------------------------------------
+Application started at: 2025-02-21 14:22:37
+User: GingaDza
+--------------------------------------------------
+Application started at: 2025-02-21 14:30:36
+User: GingaDza
+--------------------------------------------------
+Application started at: 2025-02-21 14:36:38
+User: GingaDza
+Dark Mode: False
+--------------------------------------------------
+Application started at: 2025-02-21 14:38:48
+User: GingaDza
+Dark Mode: False
+--------------------------------------------------
+Application started at: 2025-02-21 14:41:24
+User: GingaDza
+Dark Mode: False
+--------------------------------------------------
+Application started at: 2025-02-21 14:57:03
+User: GingaDza
+Dark Mode: False
+--------------------------------------------------
+Application started at: 2025-02-21 15:06:55
+User: root
+Dark Mode: False
+--------------------------------------------------
+Application started at: 2025-02-21 15:10:32
+User: root
+Dark Mode: False
+--------------------------------------------------
+Application started at: 2025-02-21 15:14:18
+User: root
+Dark Mode: False
+--------------------------------------------------
+Application started at: 2025-02-21 15:14:40
+User: root
+Dark Mode: False
+--------------------------------------------------
+Application started at: 2025-02-21 15:15:05
+User: root
+Dark Mode: False
+--------------------------------------------------
+Application started at: 2025-02-21 15:15:47
+User: root
+Dark Mode: False
+--------------------------------------------------
+Application started at: 2025-02-21 21:19:01
+User: root
+Dark Mode: False
+--------------------------------------------------
+Application started at: 2025-02-21 21:25:05
+User: root
+Dark Mode: False
+--------------------------------------------------
+Application started at: 2025-02-21 21:28:31
+User: root
+Dark Mode: False
+--------------------------------------------------
+Application started at: 2025-02-21 21:32:52
+User: root
+Dark Mode: False
+--------------------------------------------------
+Application started at: 2025-02-21 21:48:57
+User: root
+Dark Mode: False
+--------------------------------------------------
+Application started at: 2025-02-21 21:49:38
+User: root
+Dark Mode: False
+--------------------------------------------------
+Application started at: 2025-02-21 21:50:35
+User: root
+Dark Mode: False
+--------------------------------------------------
+Application started at: 2025-02-21 21:53:22
+User: root
+Dark Mode: False
+--------------------------------------------------
+Application started at: 2025-02-21 21:55:30
+User: root
+Dark Mode: False
+--------------------------------------------------

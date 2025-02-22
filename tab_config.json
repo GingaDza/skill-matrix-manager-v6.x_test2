@@ -1,0 +1,16 @@
+{
+    "tabs": [
+        {
+            "name": "スキルマトリックス",
+            "class": "skill_matrix_manager.ui.components.skill_matrix_tab.SkillMatrixTab",
+            "enabled": true,
+            "order": 1
+        },
+        {
+            "name": "スキルギャップ",
+            "class": "skill_matrix_manager.ui.components.skill_gap_tab.tab.SkillGapTab",
+            "enabled": true,
+            "order": 2
+        }
+    ]
+}
