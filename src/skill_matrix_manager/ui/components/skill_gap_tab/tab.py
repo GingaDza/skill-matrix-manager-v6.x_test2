@@ -1,6 +1,7 @@
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLabel, QScrollArea
 from typing import Dict, List
 from skill_matrix_manager.utils.debug_logger import DebugLogger
+from skill_matrix_manager.models.skill_data_manager import SkillDataManager
 from .chart_widget import RadarChartWidget
 from .progressive_target_widget import ProgressiveTargetWidget
 
@@ -9,47 +10,20 @@ logger = DebugLogger.get_logger()
 class SkillGapTab(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
-        # 初期スキルデータ（階層構造）
-        self._skill_hierarchy = {
-            'プログラミング': {
-                'バックエンド': {
-                    'Python': '1',
-                    'SQL': '1',
-                    'Java': '1'
-                },
-                'フロントエンド': {
-                    'JavaScript': '1',
-                    'HTML/CSS': '1',
-                    'React': '1'
-                }
-            },
-            'インフラ': {
-                'クラウド': {
-                    'AWS': '1',
-                    'Docker': '1',
-                    'Kubernetes': '1'
-                },
-                'ネットワーク': {
-                    'TCP/IP': '1',
-                    'セキュリティ': '1'
-                }
-            },
-            'プロジェクト管理': {
-                '開発プロセス': {
-                    'Agile': '1',
-                    'Scrum': '1'
-                },
-                'バージョン管理': {
-                    'Git': '1',
-                    'GitHub': '1'
-                }
-            }
-        }
+        # SkillDataManagerのインスタンスを取得
+        self._skill_manager = SkillDataManager()
+        self._skill_hierarchy = {}
+        
         logger.debug("Initializing SkillGapTab")
         self._setup_ui()
         
-        # 初期値を設定
-        self.set_skills(self._skill_hierarchy)
+        # スキルデータの変更を監視
+        self._skill_manager.skill_data_changed.connect(self._on_skill_data_changed)
+        
+        # 現在のスキルデータを取得
+        self._skill_hierarchy = self._skill_manager.get_skill_hierarchy()
+        if self._skill_hierarchy:
+            self.set_skills(self._skill_hierarchy)
 
     def _setup_ui(self):
         """UIのセットアップ"""
@@ -83,6 +57,12 @@ class SkillGapTab(QWidget):
         main_layout.addWidget(scroll_area)
 
         self.setLayout(main_layout)
+
+    def _on_skill_data_changed(self, new_hierarchy: Dict[str, Dict[str, Dict[str, str]]]):
+        """スキルデータが変更された時の処理"""
+        logger.debug("Skill data changed, updating view")
+        self._skill_hierarchy = new_hierarchy
+        self.set_skills(new_hierarchy)
 
     def set_skills(self, skill_hierarchy: Dict[str, Dict[str, Dict[str, str]]]) -> None:
         """スキル階層構造の更新"""
@@ -118,6 +98,10 @@ class SkillGapTab(QWidget):
 
     def _update_chart(self) -> None:
         """チャートの更新"""
+        if not self._skill_hierarchy:
+            logger.debug("No skill hierarchy data available")
+            return
+
         # 現在値を取得（すべて1で初期化）
         current_values = self._get_current_levels()
         
@@ -153,6 +137,3 @@ class SkillGapTab(QWidget):
         
         logger.debug("Chart updated")
 
-    def get_current_skill_hierarchy(self) -> Dict[str, Dict[str, Dict[str, str]]]:
-        """現在のスキル階層構造を取得"""
-        return self._skill_hierarchy.copy()
